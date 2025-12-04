@@ -1,0 +1,16 @@
+{
+  "name": "GlitterGutter",
+  "displayName": "Column Number in Gutter",
+  "description": "Shows the current cursor column number in the gutter next to the line number.",
+  "version": "1.0.0",
+  "engines": { "vscode": "^1.70.0" },
+  "categories": [ "Other" ],
+  "activationEvents": [ "onStartupFinished" ],
+  "main": "./extension.js",
+  "contributes": {},
+  "scripts": { "package": "vsce package" },
+  "devDependencies": {
+    "esbuild": "^0.27.1",
+    "vsce": "^2.15.0"
+  }
+}
