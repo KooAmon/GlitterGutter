@@ -1,12 +1,15 @@
 // Access VS Code's extension API.
 const vscode = require('vscode');
 
+// Track previous word wrap setting so we can restore it on deactivate.
+let previousWordWrapSetting;
+
 // Main entry point invoked when the extension becomes active.
 function activate(context) {
     // Decoration definition that emulates a custom gutter entry.
     const lineDecorationType = vscode.window.createTextEditorDecorationType({
         before: {
-            color: '#888',
+            color: '#888F99',
             fontWeight: 'bold'
         },
         isWholeLine: true
@@ -66,24 +69,24 @@ function activate(context) {
         const decorations = Array.from(visibleLines)
             .sort((a, b) => a - b)
             .map(line => {
-            const lineNumber = line + 1;
-            const isActive = line === activeLine;
-            const label = isActive
-                ? `${lineNumber}-${activeColumn}`
-                : ''.padStart(labelWidth, ' ');
-            // Use textDecoration to reserve horizontal space and keep the label pinned during horizontal scroll.
-            const decorationCss = `none; left: 0; z-index: 10; display: inline-block; width: ${labelWidth + 1}ch; text-align: right; padding-right: 1ch; background-color: var(--vscode-editor-background);`;
+                const lineNumber = line + 1;
+                const isActive = line === activeLine;
+                const label = isActive
+                    ? `${lineNumber}-${activeColumn}`
+                    : ''.padStart(labelWidth, ' ');
+                // Use textDecoration to reserve horizontal space and keep the label pinned during horizontal scroll.
+                const decorationCss = `none; left: 0; z-index: 10; display: inline-block; width: ${labelWidth + 1}ch; text-align: right; padding-right: 1ch; background-color: #0F0F0F; border-radius: 12px;`;
 
-            return {
-                range: new vscode.Range(line, 0, line, 0),
-                renderOptions: {
-                    before: {
-                        contentText: label,
-                        textDecoration: decorationCss
+                return {
+                    range: new vscode.Range(line, 0, line, 0),
+                    renderOptions: {
+                        before: {
+                            contentText: label,
+                            textDecoration: decorationCss
+                        }
                     }
-                }
-            };
-        });
+                };
+            });
 
         // Apply the full decoration set so VS Code renders our new gutter.
         editor.setDecorations(lineDecorationType, decorations);
@@ -107,6 +110,15 @@ function activate(context) {
         })
     );
 
+    // Turn on word wrap and remember the previous setting.
+    (async () => {
+        try {
+            const editorConfig = vscode.workspace.getConfiguration('editor');
+            previousWordWrapSetting = editorConfig.get('wordWrap');
+            await editorConfig.update('wordWrap', 'on', vscode.ConfigurationTarget.Global);
+        } catch (e) { }
+    })();
+
     // Prepare the simulated gutter for any editors already on screen.
     refreshAllVisibleEditors();
 
@@ -129,7 +141,15 @@ function activate(context) {
 }
 
 // VS Code calls this when your extension is being torn down.
-function deactivate() {}
+async function deactivate() {
+    // Restore prior word wrap setting if we changed it.
+    if (previousWordWrapSetting !== undefined) {
+        try {
+            const editorConfig = vscode.workspace.getConfiguration('editor');
+            await editorConfig.update('wordWrap', previousWordWrapSetting, vscode.ConfigurationTarget.Global);
+        } catch (e) { }
+    }
+}
 
 // Expose the lifecycle hooks to VS Code.
 module.exports = {
