@@ -2,7 +2,8 @@
     "name": "GlitterGutter",
     "displayName": "Column Number in Gutter",
     "description": "Shows the current cursor column number in the gutter next to the line number.",
-    "version": "0.0.1",
+    "version": "0.0.2",
+    "license": "WTF",
     "engines": {
         "vscode": "^1.70.0"
     },
