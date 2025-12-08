@@ -6,11 +6,21 @@ let previousWordWrapSetting;
 
 // Main entry point invoked when the extension becomes active.
 function activate(context) {
+    // Read user configuration for label colors.
     // Decoration definition that emulates a custom gutter entry.
     const lineDecorationType = vscode.window.createTextEditorDecorationType({
         before: {
-            color: '#888F99',
-            fontWeight: 'bold'
+            fontWeight: 'bold',
+            textDecoration: `
+              none;
+              position: relative;
+              left: 0;
+              z-index: 10;
+              display: inline-block;
+              text-align: right;
+              padding-right: 1ch;
+              border-radius: 12px;
+            `
         },
         isWholeLine: true
     });
@@ -42,13 +52,19 @@ function activate(context) {
     function updateDecorations(editor = vscode.window.activeTextEditor) {
         if (!editor) { return; }
 
-        hideNativeLineNumbers(editor);
+        try {
+            hideNativeLineNumbers(editor);
 
-        const activeLine = editor.selection.active.line;                        // Zero-based caret line.
-        const activeColumn = editor.selection.active.character + 1;             // One-based caret column.
-        const maxDigits = editor.document.lineCount.toString().length;          // Widest line count in digits.
-        const activeColumnDigits = Math.max(2, activeColumn.toString().length); // Reserve space for column.
-        const labelWidth = maxDigits + 1 + activeColumnDigits;                  // Total characters needed for "line-column".
+            // Read current configuration so label colors update immediately when settings change.
+            const config = vscode.workspace.getConfiguration('glitterGutter');
+            const labelColor = config.get('labelColor', '#888F99');
+            const labelBackground = config.get('labelBackground', '#0F0F0F');
+
+            const activeLine = editor.selection.active.line;                        // Zero-based caret line.
+            const activeColumn = editor.selection.active.character + 1;             // One-based caret column.
+            const maxDigits = editor.document.lineCount.toString().length;          // Widest line count in digits.
+            const activeColumnDigits = Math.max(2, activeColumn.toString().length); // Reserve space for column.
+            const labelWidth = maxDigits + 1 + activeColumnDigits;                  // Total characters needed for "line-column".
 
         const visibleLines = new Set();
         editor.visibleRanges.forEach(range => {
@@ -66,6 +82,8 @@ function activate(context) {
             visibleLines.add(editor.selection.active.line);
         }
 
+        const beforeCss = `none; width: ${labelWidth}ch;`;
+
         const decorations = Array.from(visibleLines)
             .sort((a, b) => a - b)
             .map(line => {
@@ -74,15 +92,15 @@ function activate(context) {
                 const label = isActive
                     ? `${lineNumber}-${activeColumn}`
                     : ''.padStart(labelWidth, ' ');
-                // Use textDecoration to reserve horizontal space and keep the label pinned during horizontal scroll.
-                const decorationCss = `none; left: 0; z-index: 10; display: inline-block; width: ${labelWidth + 1}ch; text-align: right; padding-right: 1ch; background-color: #0F0F0F; border-radius: 12px;`;
 
                 return {
-                    range: new vscode.Range(line, 0, line, 0),
+                    range: editor.document.lineAt(line).range,
                     renderOptions: {
                         before: {
                             contentText: label,
-                            textDecoration: decorationCss
+                            color: labelColor,
+                            backgroundColor: labelBackground,
+                            textDecoration: beforeCss
                         }
                     }
                 };
@@ -90,6 +108,9 @@ function activate(context) {
 
         // Apply the full decoration set so VS Code renders our new gutter.
         editor.setDecorations(lineDecorationType, decorations);
+        } catch (err) {
+            console.error('[Glitter Gutter] updateDecorations failed', err);
+        }
     }
 
     // Helper used for bulk refreshes across every open editor.
@@ -107,6 +128,11 @@ function activate(context) {
         vscode.workspace.onDidChangeTextDocument(event => {
             const affectedEditors = vscode.window.visibleTextEditors.filter(editor => editor.document === event.document);
             affectedEditors.forEach(updateDecorations);
+        }),
+        vscode.workspace.onDidChangeConfiguration(event => {
+            if (event.affectsConfiguration('glitterGutter')) {
+                refreshAllVisibleEditors();
+            }
         })
     );
 

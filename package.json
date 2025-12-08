@@ -13,7 +13,23 @@
         "onStartupFinished"
     ],
     "main": "./extension.js",
-    "contributes": {},
+    "contributes": {
+        "configuration": {
+            "title": "GlitterGutter",
+            "properties": {
+                "glitterGutter.labelColor": {
+                    "type": "string",
+                    "default": "#888F99",
+                    "description": "Foreground color of the gutter label (line-column)."
+                },
+                "glitterGutter.labelBackground": {
+                    "type": "string",
+                    "default": "#0F0F0F",
+                    "description": "Background color of the gutter label (line-column)."
+                }
+            }
+        }
+    },
     "scripts": {
         "package": "vsce package"
     },
