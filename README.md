@@ -26,7 +26,7 @@ This method keeps the extension in your working directory so changes take effect
 **Windows:**
 ```powershell
 cd %USERPROFILE%\.vscode\extensions
-mklink /D GlitterGutter "c:\Development\GitHub\GlitterGutter"
+mklink /D GlitterGutter "C:\path\to\your\GlitterGutter"
 ```
 
 **Mac/Linux:**
